@@ -1,0 +1,147 @@
+// SEO Health Dashboard — data model (§5 of the build brief).
+//
+// Storage split rationale (from the brief):
+//   * page_scores is a thin, fast, indexed time series that powers the graph.
+//   * issues / issue_occurrences hold the full stateful detail + time-travel.
+//   * projects / pages / (schedules) are config.
+//
+// SQLite is used for a single-command, self-contained dev experience. Where the
+// brief calls for Postgres `jsonb` (evidence), we store JSON in a String column
+// and (de)serialize at the edge. Everything else maps 1:1 to the brief.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String
+  createdAt DateTime @default(now())
+
+  pages       Page[]
+  runs        Run[]
+  scores      PageScore[]
+  issues      Issue[]
+  occurrences IssueOccurrence[]
+
+  @@map("projects")
+}
+
+model Page {
+  id        String  @id @default(cuid())
+  projectId String
+  pageType  String // home | plp | pdp | cart | checkout
+  url       String
+  isActive  Boolean @default(true)
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  runs        Run[]
+  scores      PageScore[]
+  issues      Issue[]
+
+  @@index([projectId, pageType])
+  @@map("pages")
+}
+
+// One audit execution per page. Scheduled / manual / deploy triggers all share
+// this pipeline and differ only by `trigger`.
+model Run {
+  id             String   @id @default(cuid())
+  projectId      String
+  pageId         String
+  runDate        DateTime
+  trigger        String // scheduled | manual | deploy
+  status         String   @default("completed") // queued | running | completed | failed
+  rawHtmlRef     String? // pointer/hash of raw pre-JS HTML capture
+  renderedDomRef String? // pointer/hash of post-JS rendered DOM capture
+  createdAt      DateTime @default(now())
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  page        Page              @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  score       PageScore?
+  occurrences IssueOccurrence[]
+
+  @@index([pageId, runDate])
+  @@map("runs")
+}
+
+// Thin time series that powers the 90-day graph.
+model PageScore {
+  id        String   @id @default(cuid())
+  runId     String   @unique
+  projectId String
+  pageId    String
+  pageType  String
+  runDate   DateTime
+  score     Int // 0-100
+
+  run     Run     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  page    Page    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, pageType, runDate])
+  @@map("page_scores")
+}
+
+// STATEFUL: one row per unique tracked problem (per fingerprint).
+model Issue {
+  id        String @id @default(cuid())
+  projectId String
+  pageId    String
+
+  // hash(project_id, page_type, rule_id, target_locator). NOT globally unique:
+  // the reopen strategy is "new row per cycle", so a regression reuses the same
+  // fingerprint on a new row. The real invariant — at most one OPEN issue per
+  // fingerprint at a time — is enforced by the lifecycle diff inside a
+  // transaction (see src/lib/lifecycle.ts).
+  fingerprint String
+  ruleId      String
+  category    String
+  severity    String // critical | warning | info (current severity)
+  status      String @default("open") // open | resolved
+
+  firstSeenRunId String
+  firstSeenDate  DateTime
+  lastSeenRunId  String
+  lastSeenDate   DateTime
+  resolvedRunId  String?
+  resolvedDate   DateTime? // null while open
+
+  title       String
+  remediation String
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  page        Page              @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  occurrences IssueOccurrence[]
+
+  @@index([pageId, status])
+  @@index([projectId, status])
+  @@index([fingerprint, status])
+  @@map("issues")
+}
+
+// Snapshot of an issue per run — enables full time-travel via `as_of`.
+model IssueOccurrence {
+  id            String   @id @default(cuid())
+  issueId       String
+  projectId     String
+  runId         String
+  runDate       DateTime
+  severityAtRun String // severity can change over time
+  evidence      String // JSON: offending markup/value observed that run
+
+  issue   Issue   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  run     Run     @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([issueId, runId])
+  @@index([issueId, runDate])
+  @@index([runId])
+  @@map("issue_occurrences")
+}
