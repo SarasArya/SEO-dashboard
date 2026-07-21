@@ -27,10 +27,15 @@ Toolchain: **yarn** (classic) · **Node 24 LTS** (`.nvmrc`).
 
 ```bash
 yarn install
+cp .env.example .env  # sets DATABASE_URL="file:./dev.db" for local dev
 yarn db:push          # create the SQLite schema (dev.db)
 yarn db:seed          # 90 days of demo history (3 sites × 5 page types)
 yarn dev              # http://localhost:3000
 ```
+
+> Skipping `cp .env.example .env` is what causes Prisma's
+> `Environment variable not found: DATABASE_URL` — the real `.env` is
+> gitignored, so a fresh clone must create it from the example.
 
 Run the tests (lifecycle diff + score determinism + analyzers):
 

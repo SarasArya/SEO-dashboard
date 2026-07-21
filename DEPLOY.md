@@ -33,6 +33,7 @@ This avoids running 1,350 audit transactions over the network.
 
 ```bash
 yarn install
+cp .env.example .env  # DATABASE_URL="file:./dev.db"
 yarn db:push          # create local dev.db schema
 yarn db:seed          # 90 days of demo history into dev.db
 
