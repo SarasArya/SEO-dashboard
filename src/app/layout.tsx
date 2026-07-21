@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
+      {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla's
+          cz-shortcut-listen) inject attributes on <body> before React hydrates.
+          This suppresses that one-level attribute mismatch only. */}
+      <body suppressHydrationWarning>
         <header className="site-header">
           <div className="container">
             <Link href="/" className="brand">
