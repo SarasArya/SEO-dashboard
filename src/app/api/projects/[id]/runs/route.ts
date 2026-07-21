@@ -45,5 +45,5 @@ export async function POST(
     results.push({ page_id: page.id, page_type: page.pageType, ...result });
   }
 
-  return NextResponse.json({ trigger, ran: results.length, results });
+  return NextResponse.json({ trigger, mode: live ? "live" : "synthetic", ran: results.length, results });
 }

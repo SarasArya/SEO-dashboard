@@ -174,3 +174,16 @@ button.primary:hover { filter: brightness(1.08); }
 .method-list strong, .panel p strong { color: var(--text); }
 .panel h3 { font-size: 13px; margin: 0 0 4px; }
 .panel p { margin: 6px 0; }
+
+/* Audit-mode indicators */
+.mode-banner {
+  background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.4);
+  color: #f0c375; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.55;
+}
+.mode-banner strong { color: var(--warning); }
+.mode-banner code { background: rgba(0,0,0,.35); padding: 1px 5px; border-radius: 4px; color: #ffd9a0; }
+.demo-chip {
+  font-size: 11px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
+  color: var(--warning); border: 1px solid rgba(245,158,11,.4); background: rgba(245,158,11,.1);
+  padding: 2px 8px; border-radius: 999px; margin-left: 10px;
+}

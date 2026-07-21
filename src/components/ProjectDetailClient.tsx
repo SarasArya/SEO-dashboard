@@ -14,6 +14,7 @@ interface Props {
   name: string;
   domain: string;
   lastRunAt: string | null;
+  auditMode: "live" | "synthetic";
 }
 
 interface IssuesResponse {
@@ -23,7 +24,7 @@ interface IssuesResponse {
 
 const FILTERS: Filter[] = ["all", ...PAGE_TYPES];
 
-export function ProjectDetailClient({ projectId, name, domain, lastRunAt }: Props) {
+export function ProjectDetailClient({ projectId, name, domain, lastRunAt, auditMode }: Props) {
   const [pageType, setPageType] = useState<Filter>("all");
   const [status, setStatus] = useState<StatusFilter>("open");
   const [asOf, setAsOf] = useState<string | null>(null);
@@ -80,6 +81,15 @@ export function ProjectDetailClient({ projectId, name, domain, lastRunAt }: Prop
       <div className="breadcrumb">
         <a href="/">← Projects</a>
       </div>
+
+      {auditMode === "synthetic" && (
+        <div className="mode-banner">
+          <strong>Demo mode</strong> — audits use deterministic <em>synthetic</em> data, not a live crawl of{" "}
+          {domain}. Scores here don’t reflect the real site. Set <code>LIVE_AUDITS=1</code> (and install a
+          browser: <code>npx playwright install chromium</code>) to crawl real URLs with Playwright, Lighthouse,
+          and HTTP link checks.
+        </div>
+      )}
 
       <div className="detail-header">
         <div>

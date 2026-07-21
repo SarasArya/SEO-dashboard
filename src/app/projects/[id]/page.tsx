@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { auditMode } from "@/lib/config";
 import { ProjectDetailClient } from "@/components/ProjectDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function ProjectDetailPage({
       name={project.name}
       domain={project.domain}
       lastRunAt={lastRun ? lastRun.runDate.toISOString() : null}
+      auditMode={auditMode()}
     />
   );
 }

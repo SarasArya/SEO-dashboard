@@ -49,6 +49,15 @@ export function nextScheduledRun(now: Date): Date {
   return next;
 }
 
+// Whether audits crawl real URLs (Playwright + Lighthouse + HTTP link checks)
+// or use the deterministic synthetic snapshot source. Surfaced in the UI so a
+// synthetic run is never mistaken for a real crawl.
+export type AuditMode = "live" | "synthetic";
+
+export function auditMode(): AuditMode {
+  return process.env.LIVE_AUDITS === "1" ? "live" : "synthetic";
+}
+
 // Default page paths scaffolded for a new project (one per page type).
 export const DEFAULT_PAGE_PATHS: Record<string, string> = {
   home: "/",

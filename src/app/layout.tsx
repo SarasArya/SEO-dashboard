@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { auditMode } from "@/lib/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const mode = auditMode();
   return (
     <html lang="en">
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla's
@@ -20,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="dot" />
               SEO Health
               <small>· on-page monitoring</small>
+              {mode === "synthetic" && <span className="demo-chip" title="Audits use synthetic data; set LIVE_AUDITS=1 to crawl real URLs">Demo data</span>}
             </Link>
             <Link href="/methodology" className="muted small nav-link">
               internal health score · 0–100 · <span className="nav-em">Methodology</span>
