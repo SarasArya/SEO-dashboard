@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { extractVitals } from "@/lib/pipeline/lighthouse";
-import { extractSameOriginLinks, isBrokenStatus } from "@/lib/pipeline/linkcheck";
+import { extractSameOriginLinks, isBrokenStatus, classifyStatus } from "@/lib/pipeline/linkcheck";
 import { runAnalyzers } from "@/lib/pipeline/analyzers";
 import type { PageSnapshot } from "@/lib/types";
 
@@ -68,6 +68,18 @@ describe("linkcheck status classification", () => {
     expect(isBrokenStatus(200)).toBe(false);
     expect(isBrokenStatus(301)).toBe(false);
   });
+
+  it("classifies ok / broken / unverified", () => {
+    expect(classifyStatus(200)).toBe("ok");
+    expect(classifyStatus(301)).toBe("ok");
+    expect(classifyStatus(404)).toBe("broken");
+    expect(classifyStatus(500)).toBe("broken");
+    expect(classifyStatus(0)).toBe("broken");
+    expect(classifyStatus(429)).toBe("unverified");
+    expect(classifyStatus(403)).toBe("unverified");
+    expect(classifyStatus(503)).toBe("unverified");
+    expect(classifyStatus(999)).toBe("unverified");
+  });
 });
 
 describe("broken-link analyzer uses live results when present", () => {
@@ -96,5 +108,21 @@ describe("broken-link analyzer uses live results when present", () => {
   it("emits nothing when brokenLinks is an empty array (live, all healthy)", () => {
     const findings = runAnalyzers(snap({ brokenLinks: [] }));
     expect(findings.some((f) => f.category === "links" && f.ruleId.startsWith("broken"))).toBe(false);
+  });
+
+  it("emits info 'could not verify' findings, separate from broken warnings", () => {
+    const findings = runAnalyzers(
+      snap({
+        brokenLinks: [{ url: "https://shop.example/dead", status: 404 }],
+        unverifiedLinks: [{ url: "https://shop.example/rl", status: 429 }],
+      }),
+    );
+    const broken = findings.filter((f) => f.ruleId === "broken_internal_link");
+    const unverified = findings.filter((f) => f.ruleId === "link_unverified");
+    expect(broken).toHaveLength(1);
+    expect(broken[0].severity).toBe("warning");
+    expect(unverified).toHaveLength(1);
+    expect(unverified[0].severity).toBe("info");
+    expect(unverified[0].targetLocator).toBe("https://shop.example/rl");
   });
 });

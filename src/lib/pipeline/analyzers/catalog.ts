@@ -96,7 +96,7 @@ export const CATALOG: RuleDescriptor[] = [
     severity: "warning",
     category: "links",
     detects:
-      "Live audits politely HTTP-check same-origin links and flag only genuinely dead ones (404/410, server errors, unreachable). Rate-limit / anti-bot responses (429/403/503) are treated as unverifiable, not broken. Offline, flags empty, \"#\", or javascript: hrefs.",
+      "Live audits politely HTTP-check same-origin links and flag only genuinely dead ones (404/410, server errors, unreachable) as warnings. Inconclusive responses (rate-limit / anti-bot / auth: 429/403/503) are surfaced separately as an info \"could not verify\" note, never as broken. Offline, flags empty, \"#\", or javascript: hrefs.",
     remediation: "Point links at reachable URLs; remove dead links.",
     method: "http",
   },

@@ -55,6 +55,9 @@ export interface PageSnapshot {
   // Same-origin links found broken by HTTP checks (live audits). When present,
   // the broken-link analyzer uses these instead of the offline href heuristic.
   brokenLinks?: BrokenLink[];
+  // Links that returned an inconclusive response (rate-limit / anti-bot / auth)
+  // — surfaced as info ("couldn't verify"), never as broken.
+  unverifiedLinks?: BrokenLink[];
 }
 
 export interface BrokenLink {

@@ -39,6 +39,19 @@ function isTransient(status: number): boolean {
   return status === 0 || status === 429 || status === 503 || status === 408;
 }
 
+export type LinkStatusClass = "ok" | "broken" | "unverified";
+
+// Three-way classification:
+//   ok         — 2xx/3xx, the link resolves.
+//   broken     — genuinely dead (see isBrokenStatus).
+//   unverified — a response came back but we can't conclude (rate-limit /
+//                anti-bot / auth, e.g. 429, 403, 401, 408, 503, 999).
+export function classifyStatus(status: number): LinkStatusClass {
+  if (status >= 200 && status < 400) return "ok";
+  if (isBrokenStatus(status)) return "broken";
+  return "unverified";
+}
+
 export function extractSameOriginLinks(html: string, baseUrl: string): string[] {
   let origin: string;
   try {
@@ -104,18 +117,27 @@ async function checkOne(url: string): Promise<number> {
   return status;
 }
 
-// Check links with bounded concurrency; return only the genuinely broken ones.
-export async function findBrokenLinks(html: string, baseUrl: string): Promise<BrokenLink[]> {
+export interface LinkCheckResult {
+  broken: BrokenLink[]; // genuinely dead → warning
+  unverified: BrokenLink[]; // inconclusive (rate-limit/anti-bot) → info
+}
+
+// Check links with bounded concurrency, splitting results into broken vs.
+// unverified. OK links produce nothing.
+export async function checkLinks(html: string, baseUrl: string): Promise<LinkCheckResult> {
   const links = extractSameOriginLinks(html, baseUrl);
   const broken: BrokenLink[] = [];
+  const unverified: BrokenLink[] = [];
   let i = 0;
   async function worker() {
     while (i < links.length) {
       const url = links[i++];
       const status = await checkOne(url);
-      if (isBrokenStatus(status)) broken.push({ url, status });
+      const cls = classifyStatus(status);
+      if (cls === "broken") broken.push({ url, status });
+      else if (cls === "unverified") unverified.push({ url, status });
     }
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, links.length) }, worker));
-  return broken;
+  return { broken, unverified };
 }

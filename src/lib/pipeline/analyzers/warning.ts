@@ -162,7 +162,7 @@ export const brokenLinkAnalyzer: Analyzer = {
   id: "broken_links",
   run(snapshot: PageSnapshot): Finding[] {
     if (snapshot.brokenLinks) {
-      return snapshot.brokenLinks.map((b) => ({
+      const findings: Finding[] = snapshot.brokenLinks.map((b) => ({
         ruleId: "broken_internal_link",
         severity: "warning" as const,
         category: "links" as const,
@@ -171,6 +171,20 @@ export const brokenLinkAnalyzer: Analyzer = {
         title: "Broken internal link",
         remediation: `Fix or remove the link to ${b.url} (returned ${b.status || "no response"}).`,
       }));
+      // "Couldn't verify" bucket: a response came back but was inconclusive
+      // (rate-limit / anti-bot / auth). Surfaced as info, not a false alarm.
+      for (const u of snapshot.unverifiedLinks ?? []) {
+        findings.push({
+          ruleId: "link_unverified",
+          severity: "info",
+          category: "links",
+          targetLocator: u.url,
+          evidence: { url: u.url, status: u.status },
+          title: "Link could not be verified",
+          remediation: `The link to ${u.url} returned ${u.status} (rate-limit or anti-bot). Verify manually — it is likely fine.`,
+        });
+      }
+      return findings;
     }
 
     const $ = parse(snapshot.renderedHtml || snapshot.rawHtml);

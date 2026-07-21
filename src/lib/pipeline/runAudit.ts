@@ -20,7 +20,7 @@ import { runAnalyzers } from "./analyzers";
 import { fetchRaw } from "./fetcher";
 import { renderDom } from "./renderer";
 import { runLighthouse } from "./lighthouse";
-import { findBrokenLinks } from "./linkcheck";
+import { checkLinks } from "./linkcheck";
 
 export interface AuditablePage {
   id: string;
@@ -38,9 +38,9 @@ export async function buildSnapshot(page: AuditablePage): Promise<PageSnapshot> 
 
   // Real Core Web Vitals (Lighthouse) and broken-link HTTP checks. Both degrade
   // gracefully to undefined/[] if the tooling or network is unavailable.
-  const [vitals, brokenLinks] = await Promise.all([
+  const [vitals, links] = await Promise.all([
     runLighthouse(page.url),
-    findBrokenLinks(renderedHtml, page.url).catch(() => []),
+    checkLinks(renderedHtml, page.url).catch(() => ({ broken: [], unverified: [] })),
   ]);
 
   return {
@@ -51,7 +51,8 @@ export async function buildSnapshot(page: AuditablePage): Promise<PageSnapshot> 
     rendered: rendered.rendered,
     isMultiRegion: page.isMultiRegion,
     vitals,
-    brokenLinks,
+    brokenLinks: links.broken,
+    unverifiedLinks: links.unverified,
   };
 }
 
