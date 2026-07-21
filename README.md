@@ -23,19 +23,27 @@ first-seen / resolved dates and full time-travel to any historical run.
 
 ## Quick start
 
+Toolchain: **yarn** (classic) · **Node 24 LTS** (`.nvmrc`).
+
 ```bash
-npm install
-npx prisma generate
-npx prisma db push          # create the SQLite schema (dev.db)
-npm run db:seed             # 90 days of demo history (3 sites × 5 page types)
-npm run dev                 # http://localhost:3000
+yarn install
+yarn db:push          # create the SQLite schema (dev.db)
+yarn db:seed          # 90 days of demo history (3 sites × 5 page types)
+yarn dev              # http://localhost:3000
 ```
 
 Run the tests (lifecycle diff + score determinism + analyzers):
 
 ```bash
-npm test
+yarn test
 ```
+
+## Deployment
+
+Deploys to **Vercel + Turso** (both free tier) as a single Next.js app; Turso is
+a SQLite-compatible libSQL database reached via the Prisma libSQL adapter, so
+local dev keeps using the plain SQLite file. A daily Vercel Cron drives the
+scheduled audit cadence. Full steps in **[DEPLOY.md](./DEPLOY.md)**.
 
 ## Architecture
 
