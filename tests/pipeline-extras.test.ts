@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { extractVitals } from "@/lib/pipeline/lighthouse";
-import { extractSameOriginLinks } from "@/lib/pipeline/linkcheck";
+import { extractSameOriginLinks, isBrokenStatus } from "@/lib/pipeline/linkcheck";
 import { runAnalyzers } from "@/lib/pipeline/analyzers";
 import type { PageSnapshot } from "@/lib/types";
 
@@ -45,6 +45,28 @@ describe("linkcheck extractSameOriginLinks", () => {
     expect(links.some((l) => l.startsWith("mailto"))).toBe(false);
     // /about appears twice but dedupes to one.
     expect(links.filter((l) => l.endsWith("/about"))).toHaveLength(1);
+  });
+});
+
+describe("linkcheck status classification", () => {
+  it("flags only genuinely dead links", () => {
+    expect(isBrokenStatus(404)).toBe(true);
+    expect(isBrokenStatus(410)).toBe(true);
+    expect(isBrokenStatus(500)).toBe(true);
+    expect(isBrokenStatus(502)).toBe(true);
+    expect(isBrokenStatus(0)).toBe(true); // unreachable
+  });
+
+  it("does NOT flag rate-limit / anti-bot / transient responses", () => {
+    // The goatusa.com 429 false positive that prompted this rule.
+    expect(isBrokenStatus(429)).toBe(false);
+    expect(isBrokenStatus(403)).toBe(false);
+    expect(isBrokenStatus(401)).toBe(false);
+    expect(isBrokenStatus(408)).toBe(false);
+    expect(isBrokenStatus(503)).toBe(false);
+    expect(isBrokenStatus(999)).toBe(false);
+    expect(isBrokenStatus(200)).toBe(false);
+    expect(isBrokenStatus(301)).toBe(false);
   });
 });
 

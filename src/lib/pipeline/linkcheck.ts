@@ -2,16 +2,43 @@
 //
 // Offline/synthetic audits keep the cheap href heuristic in the analyzer. When
 // this runs (live), it extracts same-origin links from the rendered DOM and
-// HEAD-checks them with bounded concurrency, feeding results to the analyzer.
+// checks them politely, feeding results to the analyzer.
+//
+// Two lessons baked in to avoid false positives (which destroy trust):
+//   * Be a polite crawler — low concurrency, a real User-Agent, follow
+//     redirects, retry once on transient codes. Bursty bot-looking traffic gets
+//     rate-limited by Shopify/Cloudflare and returns 429/403.
+//   * Only a clear dead link counts as "broken". Rate-limit / anti-bot / auth
+//     responses (429, 403, 401, 408, 503, 999) are NOT broken links — they mean
+//     "we couldn't verify", so we don't flag them.
 
 import * as cheerio from "cheerio";
 import type { BrokenLink } from "@/lib/types";
 
-const MAX_LINKS = 50; // cap per page so a huge nav doesn't explode the run
-const CONCURRENCY = 8;
-const TIMEOUT_MS = 8000;
+const MAX_LINKS = 40; // cap per page so a huge nav doesn't hammer the origin
+const CONCURRENCY = 3; // polite; avoids self-inflicted rate limiting
+const TIMEOUT_MS = 10000;
+const RETRY_DELAY_MS = 1500;
+const UA =
+  "Mozilla/5.0 (compatible; SEO-Health-Dashboard/0.1; +https://example/seo-bot) link-check";
 
-// Pure, unit-testable: absolute same-origin links found in the HTML.
+// Statuses that mean "this link is genuinely dead". Everything else — including
+// 429 (rate limited), 403/401 (auth/anti-bot), 408, 503 (maintenance/transient),
+// 999 (bot block) — is treated as "could not verify" and is NOT reported.
+export function isBrokenStatus(status: number): boolean {
+  if (status === 0) return true; // network error / timeout (after retry)
+  if (status === 404 || status === 410) return true; // not found / gone
+  // Real 5xx server errors (500/502/504…), but not 503 (often maintenance /
+  // rate-limit) and not out-of-range codes like 999 (anti-bot).
+  if (status >= 500 && status <= 599 && status !== 503) return true;
+  return false;
+}
+
+// Codes worth one retry before we conclude anything.
+function isTransient(status: number): boolean {
+  return status === 0 || status === 429 || status === 503 || status === 408;
+}
+
 export function extractSameOriginLinks(html: string, baseUrl: string): string[] {
   let origin: string;
   try {
@@ -38,29 +65,46 @@ export function extractSameOriginLinks(html: string, baseUrl: string): string[] 
   return [...out].slice(0, MAX_LINKS);
 }
 
-async function headStatus(url: string): Promise<number> {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function fetchStatus(url: string, method: "HEAD" | "GET"): Promise<number> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    let res = await fetch(url, { method: "HEAD", redirect: "follow", signal: controller.signal });
-    // Some servers reject HEAD (405) — retry with a ranged GET.
-    if (res.status === 405 || res.status === 501) {
-      res = await fetch(url, {
-        method: "GET",
-        redirect: "follow",
-        signal: controller.signal,
-        headers: { range: "bytes=0-0" },
-      });
-    }
+    const res = await fetch(url, {
+      method,
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "user-agent": UA,
+        accept: "text/html,application/xhtml+xml,*/*",
+        ...(method === "GET" ? { range: "bytes=0-0" } : {}),
+      },
+    });
     return res.status;
   } catch {
-    return 0; // network error / timeout
+    return 0;
   } finally {
     clearTimeout(timer);
   }
 }
 
-// Check links with bounded concurrency; return only the broken ones.
+async function checkOne(url: string): Promise<number> {
+  let status = await fetchStatus(url, "HEAD");
+  // Some servers reject HEAD — fall back to a ranged GET.
+  if (status === 405 || status === 501 || status === 0) {
+    status = await fetchStatus(url, "GET");
+  }
+  // One polite retry on transient / rate-limit responses before deciding.
+  if (isTransient(status)) {
+    await sleep(RETRY_DELAY_MS);
+    const retry = await fetchStatus(url, "GET");
+    if (!isTransient(retry) || retry === 0) status = retry;
+  }
+  return status;
+}
+
+// Check links with bounded concurrency; return only the genuinely broken ones.
 export async function findBrokenLinks(html: string, baseUrl: string): Promise<BrokenLink[]> {
   const links = extractSameOriginLinks(html, baseUrl);
   const broken: BrokenLink[] = [];
@@ -68,8 +112,8 @@ export async function findBrokenLinks(html: string, baseUrl: string): Promise<Br
   async function worker() {
     while (i < links.length) {
       const url = links[i++];
-      const status = await headStatus(url);
-      if (status === 0 || status >= 400) broken.push({ url, status });
+      const status = await checkOne(url);
+      if (isBrokenStatus(status)) broken.push({ url, status });
     }
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, links.length) }, worker));
