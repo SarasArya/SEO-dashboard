@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { TrendChart, type ScorePoint } from "./TrendChart";
 import { IssueGroups } from "./Issues";
+import { ScoreInfo } from "./ScoreInfo";
 import { deltaClass, deltaLabel, formatDate, relativeTime } from "@/lib/format";
 import { PAGE_TYPES, type PageType, type Severity } from "@/lib/types";
 import type { IssueListItem } from "@/lib/aggregation";
@@ -61,6 +62,7 @@ export function ProjectDetailClient({ projectId, name, domain, lastRunAt, auditM
   const current = series.length ? series[series.length - 1].score : 100;
   const first = series.length ? series[0].score : current;
   const delta = current - first;
+  const hasTrend = series.length >= 2; // delta is only meaningful with history
 
   async function runNow() {
     setRunning(true);
@@ -98,8 +100,13 @@ export function ProjectDetailClient({ projectId, name, domain, lastRunAt, auditM
         </div>
         <div className="score-line">
           <span className="muted small">Score</span>
+          <ScoreInfo />
           <span className="score-big">{current}</span>
-          <span className={`delta ${deltaClass(delta)}`}>{deltaLabel(delta)}</span>
+          {hasTrend ? (
+            <span className={`delta ${deltaClass(delta)}`}>{deltaLabel(delta)}</span>
+          ) : (
+            <span className="delta flat" title="Needs at least two audits to show a trend">new</span>
+          )}
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <span className="muted small">Last scan {relativeTime(lastRunAt)}</span>

@@ -37,6 +37,14 @@ yarn dev              # http://localhost:3000
 > `Environment variable not found: DATABASE_URL` — the real `.env` is
 > gitignored, so a fresh clone must create it from the example.
 
+Remove the seeded demo projects (the `*.example` sites) once you've added real
+ones — real projects are left untouched:
+
+```bash
+yarn db:remove-demo            # remove all *.example demo projects
+yarn db:remove-demo <domain>   # remove one project by domain
+```
+
 Run the tests (lifecycle diff + score determinism + analyzers):
 
 ```bash

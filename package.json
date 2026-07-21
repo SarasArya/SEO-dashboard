@@ -16,6 +16,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:remove-demo": "tsx scripts/remove-demo-data.ts",
     "db:reset": "prisma db push --force-reset && yarn db:seed"
   },
   "prisma": {

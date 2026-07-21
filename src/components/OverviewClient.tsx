@@ -78,8 +78,14 @@ export function OverviewClient({ projects }: { projects: ProjectCard[] }) {
 
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 14 }}>
                 <span className="score-big">{p.current_score}</span>
-                <span className={`delta ${deltaClass(p.score_delta_90d)}`}>{deltaLabel(p.score_delta_90d)}</span>
-                <span className="muted small">vs. 90d ago</span>
+                {p.sparkline.length >= 2 ? (
+                  <>
+                    <span className={`delta ${deltaClass(p.score_delta_90d)}`}>{deltaLabel(p.score_delta_90d)}</span>
+                    <span className="muted small">vs. 90d ago</span>
+                  </>
+                ) : (
+                  <span className="delta flat">new</span>
+                )}
               </div>
 
               <div style={{ marginTop: 8 }}>

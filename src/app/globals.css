@@ -187,3 +187,18 @@ button.primary:hover { filter: brightness(1.08); }
   color: var(--warning); border: 1px solid rgba(245,158,11,.4); background: rgba(245,158,11,.1);
   padding: 2px 8px; border-radius: 999px; margin-left: 10px;
 }
+
+/* Score info icon + hover tooltip */
+.score-info { position: relative; display: inline-flex; align-items: center; color: var(--muted); }
+.score-info:hover { color: var(--accent); }
+.score-info-icon { font-size: 13px; line-height: 1; cursor: help; }
+.score-info-tip {
+  position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: 260px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font-size: 12px; line-height: 1.6; color: var(--text); font-weight: 400;
+  box-shadow: 0 12px 30px rgba(0,0,0,.5); opacity: 0; visibility: hidden; transition: opacity .12s;
+  z-index: 20; text-transform: none; letter-spacing: normal;
+}
+.score-info:hover .score-info-tip { opacity: 1; visibility: visible; }
+.score-info-tip strong { color: var(--text); }
+.score-info-link { color: var(--accent); }
