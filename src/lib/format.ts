@@ -23,6 +23,18 @@ export function relativeTime(iso: string | null): string {
   return `${days}d ago`;
 }
 
+export function relativeFuture(iso: string | null): string {
+  if (!iso) return "—";
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return "shortly";
+  const mins = Math.round(diff / 60000);
+  if (mins < 60) return `in ${mins}m`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `in ${hrs}h`;
+  const days = Math.round(hrs / 24);
+  return `in ${days}d`;
+}
+
 export function deltaClass(delta: number): "up" | "down" | "flat" {
   if (delta > 0) return "up";
   if (delta < 0) return "down";

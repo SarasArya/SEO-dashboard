@@ -37,3 +37,23 @@ export const CWV_THRESHOLDS = {
 export function penaltyFor(severity: Severity): number {
   return SEVERITY_WEIGHTS[severity];
 }
+
+// The daily scheduled-audit cadence. Must match the cron in vercel.json
+// ("0 3 * * *"). Used to show "next run at" on project cards.
+export const SCHEDULED_HOUR_UTC = 3;
+
+export function nextScheduledRun(now: Date): Date {
+  const next = new Date(now);
+  next.setUTCHours(SCHEDULED_HOUR_UTC, 0, 0, 0);
+  if (next.getTime() <= now.getTime()) next.setUTCDate(next.getUTCDate() + 1);
+  return next;
+}
+
+// Default page paths scaffolded for a new project (one per page type).
+export const DEFAULT_PAGE_PATHS: Record<string, string> = {
+  home: "/",
+  plp: "/collections/all",
+  pdp: "/products/flagship-product",
+  cart: "/cart",
+  checkout: "/checkout",
+};

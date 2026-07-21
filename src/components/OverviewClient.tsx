@@ -1,14 +1,18 @@
 "use client";
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkline } from "./Sparkline";
-import { deltaClass, deltaLabel, relativeTime } from "@/lib/format";
+import { CreateProjectModal } from "./CreateProjectModal";
+import { deltaClass, deltaLabel, relativeTime, relativeFuture } from "@/lib/format";
 import type { ProjectCard } from "@/lib/aggregation";
 
 type SortKey = "score" | "last_scanned" | "critical";
 
 export function OverviewClient({ projects }: { projects: ProjectCard[] }) {
   const [sort, setSort] = useState<SortKey>("critical");
+  const [showCreate, setShowCreate] = useState(false);
+  const router = useRouter();
 
   const sorted = useMemo(() => {
     const list = [...projects];
@@ -39,8 +43,19 @@ export function OverviewClient({ projects }: { projects: ProjectCard[] }) {
             <option value="score">Lowest score</option>
             <option value="last_scanned">Last scanned</option>
           </select>
+          <button className="primary" onClick={() => setShowCreate(true)}>+ New project</button>
         </div>
       </div>
+
+      {showCreate && (
+        <CreateProjectModal
+          onClose={() => setShowCreate(false)}
+          onCreated={() => {
+            setShowCreate(false);
+            router.refresh();
+          }}
+        />
+      )}
 
       {sorted.length === 0 ? (
         <div className="empty">No projects yet. Run <code>npm run db:seed</code> to load demo data.</div>
@@ -72,8 +87,8 @@ export function OverviewClient({ projects }: { projects: ProjectCard[] }) {
               </div>
 
               <div className="card-meta">
-                <span>{p.domain}</span>
                 <span>scanned {relativeTime(p.last_run_at)}</span>
+                <span>next run {relativeFuture(p.next_run_at)}</span>
               </div>
             </Link>
           ))}

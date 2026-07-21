@@ -3,7 +3,7 @@
 
 import { prisma } from "./db";
 import { aggregateScore } from "./scoring";
-import { TREND_WINDOW_DAYS } from "./config";
+import { TREND_WINDOW_DAYS, nextScheduledRun } from "./config";
 import { PAGE_TYPES, type PageType, type Severity } from "./types";
 
 export interface ProjectCard {
@@ -14,6 +14,7 @@ export interface ProjectCard {
   score_delta_90d: number;
   critical_open_count: number;
   last_run_at: string | null;
+  next_run_at: string;
   sparkline: Array<{ run_date: string; score: number }>;
 }
 
@@ -90,6 +91,7 @@ export async function getProjectCards(): Promise<ProjectCard[]> {
         score_delta_90d: current - first,
         critical_open_count: criticalOpen,
         last_run_at: lastRun ? lastRun.runDate.toISOString() : null,
+        next_run_at: nextScheduledRun(new Date()).toISOString(),
         sparkline: series,
       };
     }),
