@@ -160,3 +160,17 @@ button.primary:hover { filter: brightness(1.08); }
 .page-url { flex: 1; font-family: ui-monospace, monospace; font-size: 12px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 .form-error { color: var(--bad); font-size: 13px; margin-top: 4px; }
+
+/* Methodology page */
+.nav-link:hover { color: var(--text); }
+.nav-em { color: var(--accent); font-weight: 600; }
+.method-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+.method-table th { text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .3px; font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.method-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.method-table.checks td:first-child { white-space: nowrap; width: 200px; }
+.method-table.checks td:last-child { white-space: nowrap; }
+.method-list { margin: 8px 0 0; padding-left: 20px; color: var(--muted); }
+.method-list li { margin: 5px 0; }
+.method-list strong, .panel p strong { color: var(--text); }
+.panel h3 { font-size: 13px; margin: 0 0 4px; }
+.panel p { margin: 6px 0; }

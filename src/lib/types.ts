@@ -50,8 +50,16 @@ export interface PageSnapshot {
   rendered: boolean;
   // Region hints so i18n checks know whether hreflang is expected.
   isMultiRegion?: boolean;
-  // Core Web Vitals, when a Lighthouse-style measurement is available.
+  // Core Web Vitals, when a Lighthouse measurement is available (live audits).
   vitals?: WebVitals;
+  // Same-origin links found broken by HTTP checks (live audits). When present,
+  // the broken-link analyzer uses these instead of the offline href heuristic.
+  brokenLinks?: BrokenLink[];
+}
+
+export interface BrokenLink {
+  url: string;
+  status: number; // HTTP status, or 0 for a network/timeout failure
 }
 
 // An analyzer inspects a snapshot and emits zero or more findings.

@@ -7,6 +7,8 @@ const nextConfig = {
     "@libsql/client",
     "libsql",
     "playwright",
+    "lighthouse",
+    "chrome-launcher",
   ],
 };
 module.exports = nextConfig;

@@ -106,6 +106,21 @@ Product structured data, broken internal links, hreflang (multi-region), Core
 Web Vitals. Info: image alt (per image), non-descriptive link text, image
 optimization. Weights and severities live in `src/lib/config.ts`.
 
+On **live audits** (`LIVE_AUDITS=1`), two checks use real signals instead of
+heuristics: **Core Web Vitals** are measured with **Lighthouse**
+(`pipeline/lighthouse.ts` — LCP & CLS; INP is field-only and left unset), and
+**broken links** are verified with real **HTTP HEAD checks** of same-origin
+links (`pipeline/linkcheck.ts`). Offline/synthetic runs keep the deterministic
+heuristics.
+
+## Methodology page
+
+`/methodology` documents the scoring formula, the live severity-weight table, a
+worked score breakdown, the raw-vs-rendered detection method, and the full
+catalog of checks. The catalog (`pipeline/analyzers/catalog.ts`) is kept in sync
+with the actual analyzer registry by a test (`tests/catalog.test.ts`), so the
+page can never claim a check the engine doesn't run.
+
 ## API (§7)
 
 ```

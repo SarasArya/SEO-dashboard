@@ -153,11 +153,26 @@ function collectTypes(node: unknown, out: Set<string>): void {
   }
 }
 
-// Broken internal links — anchors with empty, "#", or javascript: hrefs are a
-// deterministic, offline-detectable proxy for broken navigation.
+// Broken internal links.
+//   * Live audits: `snapshot.brokenLinks` holds same-origin URLs that returned
+//     4xx/5xx/unreachable from real HTTP checks — one finding per URL, keyed by
+//     the URL so each is tracked individually across runs.
+//   * Offline: fall back to a heuristic (empty / "#" / javascript: hrefs).
 export const brokenLinkAnalyzer: Analyzer = {
   id: "broken_links",
   run(snapshot: PageSnapshot): Finding[] {
+    if (snapshot.brokenLinks) {
+      return snapshot.brokenLinks.map((b) => ({
+        ruleId: "broken_internal_link",
+        severity: "warning" as const,
+        category: "links" as const,
+        targetLocator: b.url,
+        evidence: { url: b.url, status: b.status || "unreachable" },
+        title: "Broken internal link",
+        remediation: `Fix or remove the link to ${b.url} (returned ${b.status || "no response"}).`,
+      }));
+    }
+
     const $ = parse(snapshot.renderedHtml || snapshot.rawHtml);
     const bad: string[] = [];
     $("a").each((_, el) => {

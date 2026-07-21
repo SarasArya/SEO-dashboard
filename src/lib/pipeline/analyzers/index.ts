@@ -5,6 +5,9 @@ import { criticalAnalyzers } from "./critical";
 import { warningAnalyzers } from "./warning";
 import { infoAnalyzers } from "./info";
 
+// How an analyzer obtains its signal (documented on the Methodology page).
+export type IngestMethod = "raw" | "rendered" | "raw-vs-rendered" | "metrics" | "http";
+
 export const ANALYZERS: Analyzer[] = [
   ...criticalAnalyzers,
   ...warningAnalyzers,

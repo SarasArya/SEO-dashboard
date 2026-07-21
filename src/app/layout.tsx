@@ -18,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               SEO Health
               <small>· on-page monitoring</small>
             </Link>
-            <span className="muted small">internal health score · 0–100</span>
+            <Link href="/methodology" className="muted small nav-link">
+              internal health score · 0–100 · <span className="nav-em">Methodology</span>
+            </Link>
           </div>
         </header>
         <main className="container">{children}</main>

@@ -19,6 +19,8 @@ import { scorePage } from "@/lib/scoring";
 import { runAnalyzers } from "./analyzers";
 import { fetchRaw } from "./fetcher";
 import { renderDom } from "./renderer";
+import { runLighthouse } from "./lighthouse";
+import { findBrokenLinks } from "./linkcheck";
 
 export interface AuditablePage {
   id: string;
@@ -32,13 +34,24 @@ export interface AuditablePage {
 export async function buildSnapshot(page: AuditablePage): Promise<PageSnapshot> {
   const raw = await fetchRaw(page.url);
   const rendered = await renderDom(page.url);
+  const renderedHtml = rendered.rendered ? rendered.renderedHtml : raw.rawHtml;
+
+  // Real Core Web Vitals (Lighthouse) and broken-link HTTP checks. Both degrade
+  // gracefully to undefined/[] if the tooling or network is unavailable.
+  const [vitals, brokenLinks] = await Promise.all([
+    runLighthouse(page.url),
+    findBrokenLinks(renderedHtml, page.url).catch(() => []),
+  ]);
+
   return {
     url: page.url,
     pageType: page.pageType,
     rawHtml: raw.rawHtml,
-    renderedHtml: rendered.rendered ? rendered.renderedHtml : raw.rawHtml,
+    renderedHtml,
     rendered: rendered.rendered,
     isMultiRegion: page.isMultiRegion,
+    vitals,
+    brokenLinks,
   };
 }
 
